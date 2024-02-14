@@ -1,21 +1,24 @@
-C=gcc
-CFLAGS=-Wall -Wextra -g -O
-RM=rm -vf
+CC = gcc
+CFLAGS=-Wall -Wextra -g -O -DDEBUG
 
-BUILD_DIR=build
+TARGET = build/yem
+SRC_DIR = src
+BUILD_DIR = build
+SRC = $(wildcard $(SRC_DIR)/*.c)
+OBJ = $(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+DEPS = $(wildcard $(SRC_DIR)/*.h)
 
-SOURCES=$(wildcard src/*.c)
-BINARIES=$(patsubst src/%.c, $(BUILD_DIR)/%, $(SOURCES))
+all: $(TARGET)
 
-.PHONY: all clean directories
+$(TARGET): $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $^
 
-all: directories $(BINARIES)
-
-directories:
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(DEPS)
 	@mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%: src/%.c
-	$(C) $(CFLAGS) $< -o $@
+.PHONY: clean
 
 clean:
-	$(RM) *~ *.0 $(BINARIES)
+	rm -rf $(BUILD_DIR)
+
