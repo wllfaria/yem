@@ -1,11 +1,7 @@
-#include <linux/limits.h>
-#include <sys/inotify.h>
 #include <time.h>
 #include <unistd.h>
 
-#define EVENT_SIZE (sizeof(struct inotify_event))
-#define MAX_READ_EVENTS 1024
-#define EVENT_BUF_LEN (MAX_READ_EVENTS * (EVENT_SIZE + 16))
+#include "yem_cli.h"
 
 #define USECOND 1000000
 
@@ -22,7 +18,9 @@ void yem_end_frame(time_t* last_frame, struct timespec* ts) {
     *last_frame = current_frame + (target - delta);
 }
 
-int main() {
+int main(int argc, char** argv) {
+    yem_parse_args(argc, argv);
+
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     time_t last_frame = ts.tv_sec * USECOND + ts.tv_nsec / 1000;
