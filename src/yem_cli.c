@@ -48,7 +48,7 @@ void yem_unknown_arg(char* arg) {
     exit(EXIT_FAILURE);
 }
 
-void yem_parse_args(int argc, char** argv) {
+char* yem_parse_args(int argc, char** argv) {
     if (argc < 2) {
         yem_not_enough_args();
     }
@@ -70,4 +70,6 @@ void yem_parse_args(int argc, char** argv) {
     if (arg[0] == '-') {
         yem_unknown_arg(arg);
     };
+
+    return arg;
 }

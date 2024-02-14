@@ -1,7 +1,10 @@
+#include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "yem_cli.h"
+#include "yem_fs.h"
+#include "yem_ht.h"
 
 #define USECOND 1000000
 
@@ -19,7 +22,12 @@ void yem_end_frame(time_t* last_frame, struct timespec* ts) {
 }
 
 int main(int argc, char** argv) {
-    yem_parse_args(argc, argv);
+    char* path = yem_parse_args(argc, argv);
+
+    struct yem_fs_dir* dirs = yem_fs_read_recurse(path);
+
+    int fd = yem_fs_init();
+    // struct yem_ht* ht = yem_fs_watch_all(all_dirs);
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);

@@ -21,12 +21,6 @@ struct yem_ht_item {
     struct yem_ht_item* next;
 };
 
-struct yem_ht {
-    struct yem_ht_item* items;
-    uint64_t capacity;
-    uint64_t length;
-};
-
 struct yem_ht* yem_ht_init(uint64_t capacity) {
     struct yem_ht* ht = malloc(sizeof(struct yem_ht));
     ht->capacity = capacity;
