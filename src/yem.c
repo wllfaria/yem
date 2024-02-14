@@ -24,16 +24,20 @@ void yem_end_frame(time_t* last_frame, struct timespec* ts) {
 int main(int argc, char** argv) {
     char* path = yem_parse_args(argc, argv);
 
-    struct yem_fs_dir* dirs = yem_fs_read_recurse(path);
+    struct yem_fs_dir* dir = yem_fs_read_recurse(path);
 
     int fd = yem_fs_init();
-    // struct yem_ht* ht = yem_fs_watch_all(all_dirs);
+    struct yem_ht* ht = yem_fs_watch_all(fd, dir);
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     time_t last_frame = ts.tv_sec * USECOND + ts.tv_nsec / 1000;
 
     while (1) {
+        struct yem_fs_event* event = yem_fs_poll_events(fd);
+        if (event->has_event) {
+            printf("%s\n", event->event->name);
+        }
         yem_end_frame(&last_frame, &ts);
     }
 

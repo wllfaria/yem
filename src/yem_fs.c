@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/inotify.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -81,43 +80,42 @@ struct yem_fs_dir* yem_fs_read_recurse(char* path) {
     return dirs;
 }
 
-int lol() {
-    char* watched_dir = "/home/wiru/code/personal/yem";
-    int fd = yem_fs_init();
-    int wd = yem_fs_watch(fd, watched_dir);
+struct yem_ht* yem_fs_watch_all(int fd, struct yem_fs_dir* dir) {
+    struct yem_ht* ht = yem_ht_init(dir->size * 2);
+    for (int i = 0; i < dir->size; ++i) {
+        char* path = dir->paths[i];
+        int wd = yem_fs_watch(fd, path);
+        yem_ht_push(ht, path, wd);
+    }
+    return ht;
+}
 
-    char buffer[4096];
-    const size_t buffer_len = sizeof(buffer);
+struct yem_fs_event* yem_fs_poll_events(int fd) {
+    char buf[4096];
+    const size_t buffer_len = sizeof(buf);
 
-    while (1) {
-        ssize_t length = read(fd, buffer, buffer_len);
-        if (length < 0 && errno != EINTR) {
-            perror("read");
-            exit(EXIT_FAILURE);
-        }
+    struct inotify_event* in_ev = NULL;
+    int in_ev_size = sizeof(struct inotify_event);
 
-        const struct inotify_event* event;
-        int offset = sizeof(struct inotify_event) + event->len;
+    struct yem_fs_event* ev = malloc(sizeof(struct yem_fs_event));
+    ev->event = in_ev;
+    ev->has_event = 0;
 
-        for (char* ptr = buffer; ptr < buffer + length; ptr += offset) {
-            event = (const struct inotify_event*)ptr;
-
-            if (event->len) {
-                char full_path[PATH_MAX];
-
-                if (event->mask & IN_CREATE) {
-                    printf("The file %s was created.\n", full_path);
-                } else if (event->mask & IN_DELETE) {
-                    printf("The file %s was deleted.\n", full_path);
-                } else if (event->mask & IN_MODIFY) {
-                    printf("The file %s was modified.\n", full_path);
-                }
-            }
-        }
+    ssize_t len = read(fd, buf, buffer_len);
+    if (len < 0 && errno != EINTR) {
+        perror("read");
+        exit(EXIT_FAILURE);
     }
 
-    inotify_rm_watch(fd, wd);
-    close(fd);
+    for (char* ptr = buf; ptr < buf + len; ptr += in_ev_size + ev->event->len) {
+        ev->event = (struct inotify_event*)ptr;
+        if (!ev->event->len) {
+            continue;
+        }
 
-    return 0;
+        ev->has_event = 1;
+        return ev;
+    }
+
+    return ev;
 }

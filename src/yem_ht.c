@@ -15,12 +15,6 @@ static uint64_t hash_key(const char* key) {
     return hash;
 }
 
-struct yem_ht_item {
-    char* key;
-    int value;
-    struct yem_ht_item* next;
-};
-
 struct yem_ht* yem_ht_init(uint64_t capacity) {
     struct yem_ht* ht = malloc(sizeof(struct yem_ht));
     ht->capacity = capacity;
