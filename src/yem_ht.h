@@ -26,4 +26,5 @@ struct yem_ht* yem_ht_init(uint64_t capacity);
 struct yem_ht_item* yem_ht_get(struct yem_ht* ht, int key);
 struct yem_ht_it yem_ht_iterator(struct yem_ht* ht);
 void yem_ht_push(struct yem_ht* ht, int key, char* path);
+void yem_ht_push_str(struct yem_ht* ht, char* key, char* path);
 int yem_ht_it_next(struct yem_ht_it* it);

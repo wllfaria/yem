@@ -31,9 +31,20 @@ int yem_fs_watch(int fd, char* path) {
     return wd;
 }
 
+int yem_fs_is_dir(char* path) {
+    struct stat stat_buf;
+
+    if (stat(path, &stat_buf) == -1) {
+        return 0;
+    }
+    if (S_ISDIR(stat_buf.st_mode)) {
+        return 1;
+    }
+    return 0;
+}
+
 void yem_fs_dir_walk(struct yem_fs_dir* dir, char* path) {
     struct dirent* d;
-    struct stat stat_buf;
     DIR* stream = opendir(path);
 
     if (!stream) {
@@ -49,11 +60,7 @@ void yem_fs_dir_walk(struct yem_fs_dir* dir, char* path) {
         char full_path[1024];
         snprintf(full_path, sizeof(full_path), "%s/%s", path, d->d_name);
 
-        if (stat(full_path, &stat_buf) == -1) {
-            continue;
-        }
-
-        if (S_ISDIR(stat_buf.st_mode)) {
+        if (yem_fs_is_dir(full_path) == 1) {
             dir->paths = realloc(dir->paths, (dir->size + 1) * sizeof(char*));
             dir->paths[dir->size] = strdup(full_path);
             dir->size++;
@@ -80,14 +87,12 @@ struct yem_fs_dir* yem_fs_read_recurse(char* path) {
     return dirs;
 }
 
-struct yem_ht* yem_fs_watch_all(int fd, struct yem_fs_dir* dir) {
-    struct yem_ht* ht = yem_ht_init(dir->size * 2);
+void yem_fs_watch_all(int fd, struct yem_fs_dir* dir, struct yem_ht* ht) {
     for (int i = 0; i < dir->size; ++i) {
         char* path = dir->paths[i];
         int wd = yem_fs_watch(fd, path);
         yem_ht_push(ht, wd, path);
     }
-    return ht;
 }
 
 struct yem_fs_event* yem_fs_poll_events(int fd) {
@@ -109,18 +114,66 @@ struct yem_fs_event* yem_fs_poll_events(int fd) {
 
     for (char* ptr = buf; ptr < buf + len; ptr += in_ev_size + ev->event->len) {
         ev->event = (struct inotify_event*)ptr;
-        if (!ev->event->len) {
-            continue;
+        if (ev->event->len) {
+            ev->has_event = 1;
+            return ev;
         }
-
-        ev->has_event = 1;
-        return ev;
     }
-
     return ev;
 }
 
 void yem_fs_clean(int fd, struct yem_ht* ht) {
     struct yem_ht_it it = yem_ht_iterator(ht);
+    while (ht->length != 0) {
+        inotify_rm_watch(fd, *(int*)it.key);
+        yem_ht_it_next(&it);
+    }
     close(fd);
+}
+
+int yem_fs_is_extension(char* path) {
+    const char* dot = strrchr(path, '.');
+    if (!dot || dot == path) {
+        return 0;
+    }
+    // TODO: check for specified file type
+    return strcmp(dot, ".c") == 0;
+}
+
+void yem_fs_ev_new(int fd, struct yem_ht* ht, struct yem_fs_event* event,
+    struct yem_ht* build) {
+    struct yem_ht_item* item = yem_ht_get(ht, event->event->wd);
+    char* path = malloc(1024);
+    snprintf(path, 1024, "%s/%s", item->path, event->event->name);
+    if (yem_fs_is_dir(path) == 1) {
+        struct yem_fs_dir* dir = yem_fs_read_recurse(path);
+        yem_fs_watch_all(fd, dir, ht);
+        return;
+    }
+    if (yem_fs_is_extension(path) == 0) {
+        return;
+    }
+    yem_ht_push_str(build, path, path);
+}
+
+void yem_fs_ev_mod(int fd, struct yem_ht* ht, struct yem_fs_event* event,
+    struct yem_ht* build) {
+    struct yem_ht_item* item = yem_ht_get(ht, event->event->wd);
+    char* path = malloc(1024);
+    snprintf(path, 1024, "%s/%s", item->path, event->event->name);
+    yem_ht_push_str(build, path, path);
+}
+
+void yem_fs_ev_del(int fd, struct yem_ht* ht, struct yem_fs_event* event,
+    struct yem_ht* build) {
+    struct yem_ht_item* item = yem_ht_get(ht, event->event->wd);
+    char* path = malloc(1024);
+    snprintf(path, 1024, "%s/%s", item->path, event->event->name);
+    if (yem_fs_is_dir(path) == 1) {
+        return;
+    }
+    if (yem_fs_is_extension(path) == 0) {
+        return;
+    }
+    yem_ht_push_str(build, path, path);
 }

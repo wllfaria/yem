@@ -25,13 +25,11 @@ struct yem_ht* yem_ht_init(uint64_t capacity) {
     return ht;
 }
 
-void yem_ht_push(struct yem_ht* ht, int key, char* path) {
-    char* key_str = malloc(11);
-    snprintf(key_str, 11, "%d", key);
-    uint64_t idx = hash_key(key_str) % ht->capacity;
+void yem_ht_push_str(struct yem_ht* ht, char* key, char* path) {
+    uint64_t idx = hash_key(key) % ht->capacity;
 
     struct yem_ht_item* item = malloc(sizeof(struct yem_ht_item));
-    item->key = key_str;
+    item->key = key;
     item->path = path;
     item->next = malloc(sizeof(struct yem_ht_item));
 
@@ -45,7 +43,7 @@ void yem_ht_push(struct yem_ht* ht, int key, char* path) {
     }
 
     while (curr->key != NULL) {
-        if (curr->key == key_str) {
+        if (curr->key == key) {
             item->next = curr->next;
             ht->items[idx] = *item;
             return;
@@ -56,6 +54,12 @@ void yem_ht_push(struct yem_ht* ht, int key, char* path) {
 
     prev->next = item;
     ++ht->length;
+}
+
+void yem_ht_push(struct yem_ht* ht, int key, char* path) {
+    char* key_str = malloc(11);
+    snprintf(key_str, 11, "%d", key);
+    yem_ht_push_str(ht, key_str, path);
 }
 
 struct yem_ht_item* yem_ht_get(struct yem_ht* ht, int key) {
@@ -77,21 +81,26 @@ struct yem_ht_item* yem_ht_get(struct yem_ht* ht, int key) {
 void yem_ht_del(struct yem_ht* ht, char* key) {
     uint64_t idx = hash_key(key) % ht->capacity;
 
+    if (ht->length == 0) {
+        return;
+    }
+
     struct yem_ht_item* curr = &ht->items[idx];
     struct yem_ht_item* prev = &ht->items[idx];
 
     if (curr->key == key) {
         ht->items[idx] = *curr->next;
-        --ht->length;
+        ht->length--;
         return;
     }
 
     while (curr->key != NULL) {
         if (curr->key == key) {
             prev->next = curr->next;
-            --ht->length;
+            ht->length--;
             break;
         }
+
         prev = curr;
         curr = curr->next;
     }
@@ -100,6 +109,8 @@ void yem_ht_del(struct yem_ht* ht, char* key) {
 struct yem_ht_it yem_ht_iterator(struct yem_ht* ht) {
     struct yem_ht_it it;
     it._ht = ht;
+    it.key = malloc(sizeof(char*));
+    it.path = malloc(sizeof(char*));
     return it;
 }
 
@@ -109,11 +120,12 @@ struct yem_ht_it yem_ht_iterator(struct yem_ht* ht) {
  */
 int yem_ht_it_next(struct yem_ht_it* it) {
     struct yem_ht* ht = it->_ht;
+
     if (ht->length == 0) {
         return 0;
     }
 
-    for (int i = 0; i < ht->capacity; ++i) {
+    for (uint64_t i = 0; i < ht->capacity; ++i) {
         struct yem_ht_item item = ht->items[i];
         if (item.key == NULL) {
             continue;

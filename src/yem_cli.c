@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "yel.h"
 #include "yem_cli.h"
@@ -69,7 +70,13 @@ char* yem_parse_args(int argc, char** argv) {
 
     if (arg[0] == '-') {
         yem_unknown_arg(arg);
-    };
+    }
+
+    if (strcmp(arg, ".") == 0) {
+        char* path = malloc(1024);
+        getcwd(path, 1024);
+        return path;
+    }
 
     return arg;
 }

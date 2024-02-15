@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/inotify.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -24,11 +27,12 @@ void yem_end_frame(time_t* last_frame, struct timespec* ts) {
 
 int main(int argc, char** argv) {
     char* path = yem_parse_args(argc, argv);
-
     struct yem_fs_dir* dir = yem_fs_read_recurse(path);
 
     int fd = yem_fs_init();
-    struct yem_ht* ht = yem_fs_watch_all(fd, dir);
+    const int DIR_SIZE = dir->size * 5;
+    struct yem_ht* ht = yem_ht_init(DIR_SIZE);
+    yem_fs_watch_all(fd, dir, ht);
 
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -36,12 +40,26 @@ int main(int argc, char** argv) {
 
     while (1) {
         struct yem_fs_event* event = yem_fs_poll_events(fd);
+        struct yem_ht* build_items = yem_ht_init(DIR_SIZE);
+
         if (event->has_event) {
-            struct yem_ht_item* item = yem_ht_get(ht, event->event->wd);
-            YEL_ECHO("%s%sWatch descriptor:%s %d\n%s/%s\n", YEL_BOLD,
-                YEL_UNDERLINE, YEL_RESET_STYLE, event->event->wd, item->path,
-                event->event->name);
+            if (event->event->mask == IN_CREATE) {
+                yem_fs_ev_new(fd, ht, event, build_items);
+            } else if (event->event->mask == IN_MODIFY) {
+                yem_fs_ev_mod(fd, ht, event, build_items);
+            } else if (event->event->mask == IN_DELETE) {
+                yem_fs_ev_del(fd, ht, event, build_items);
+            }
         }
+
+        if (build_items->length > 0) {
+            struct yem_ht_it it = yem_ht_iterator(build_items);
+            if (yem_ht_it_next(&it) == 1) {
+                YEL_INFO("File: %s\n", it.path);
+            }
+        }
+
+        free(build_items);
         yem_end_frame(&last_frame, &ts);
     }
 
