@@ -85,7 +85,7 @@ struct yem_ht* yem_fs_watch_all(int fd, struct yem_fs_dir* dir) {
     for (int i = 0; i < dir->size; ++i) {
         char* path = dir->paths[i];
         int wd = yem_fs_watch(fd, path);
-        yem_ht_push(ht, path, wd);
+        yem_ht_push(ht, wd, path);
     }
     return ht;
 }
@@ -118,4 +118,9 @@ struct yem_fs_event* yem_fs_poll_events(int fd) {
     }
 
     return ev;
+}
+
+void yem_fs_clean(int fd, struct yem_ht* ht) {
+    struct yem_ht_it it = yem_ht_iterator(ht);
+    close(fd);
 }

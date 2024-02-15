@@ -2,6 +2,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "yel.h"
 #include "yem_cli.h"
 #include "yem_fs.h"
 #include "yem_ht.h"
@@ -36,10 +37,14 @@ int main(int argc, char** argv) {
     while (1) {
         struct yem_fs_event* event = yem_fs_poll_events(fd);
         if (event->has_event) {
-            printf("%s\n", event->event->name);
+            struct yem_ht_item* item = yem_ht_get(ht, event->event->wd);
+            YEL_ECHO("%s%sWatch descriptor:%s %d\n%s/%s\n", YEL_BOLD,
+                YEL_UNDERLINE, YEL_RESET_STYLE, event->event->wd, item->path,
+                event->event->name);
         }
         yem_end_frame(&last_frame, &ts);
     }
 
+    yem_fs_clean(fd, ht);
     return 0;
 }

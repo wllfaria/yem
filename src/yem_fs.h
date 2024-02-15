@@ -17,3 +17,4 @@ int yem_fs_init();
 struct yem_fs_dir* yem_fs_read_recurse(char* path);
 struct yem_ht* yem_fs_watch_all(int fd, struct yem_fs_dir* dir);
 struct yem_fs_event* yem_fs_poll_events(int fd);
+void yem_fs_clean(int fd, struct yem_ht* ht);
