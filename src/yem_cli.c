@@ -8,7 +8,7 @@
 void yem_not_enough_args() {
     YEL_CRIT("%s%serror:%s the required argument path was not provided.\n\n",
         YEL_BOLD, YEL_UNDERLINE, YEL_RESET_STYLE);
-    YEL_ECHO("%s%sUsage:%s yem /path/ (. can be used)\n\n", YEL_BOLD,
+    YEL_ECHO("%s%sUsage:%s yem <path> (. can be used)\n\n", YEL_BOLD,
         YEL_UNDERLINE, YEL_RESET_STYLE);
     YEL_ECHO("for more information, try `%s--help (-h)%s`\n", YEL_BOLD,
         YEL_RESET_STYLE);
@@ -18,7 +18,7 @@ void yem_not_enough_args() {
 void yem_too_many_args() {
     YEL_CRIT("%s%serror:%s too many arguments provided.\n\n", YEL_BOLD,
         YEL_UNDERLINE, YEL_RESET_STYLE);
-    YEL_ECHO("%s%sUsage:%s yem /path/ (. can be used)\n\n", YEL_BOLD,
+    YEL_ECHO("%s%sUsage:%s yem <path> (. can be used)\n\n", YEL_BOLD,
         YEL_UNDERLINE, YEL_RESET_STYLE);
     YEL_ECHO("for more information, try `%s--help (-h)%s`\n", YEL_BOLD,
         YEL_RESET_STYLE);
@@ -26,7 +26,7 @@ void yem_too_many_args() {
 }
 
 void yem_show_help() {
-    YEL_ECHO("%s%sUsage:%s yem /path/to/project\n\n", YEL_BOLD, YEL_UNDERLINE,
+    YEL_ECHO("%s%sUsage:%s yem <path>\n\n", YEL_BOLD, YEL_UNDERLINE,
         YEL_RESET_STYLE);
     YEL_ECHO("%s%sOptions:%s\n", YEL_BOLD, YEL_UNDERLINE, YEL_RESET_STYLE);
     YEL_ECHO("  %s-h, --help\t\t\t%sPrint this help section\n", YEL_BOLD,

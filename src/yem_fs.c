@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "yel.h"
 #include "yem_fs.h"
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
@@ -142,6 +143,8 @@ int yem_fs_is_extension(char* path) {
 
 void yem_fs_ev_new(int fd, struct yem_ht* ht, struct yem_fs_event* event,
     struct yem_ht* build) {
+
+    char* asd;
     struct yem_ht_item* item = yem_ht_get(ht, event->event->wd);
     char* path = malloc(1024);
     snprintf(path, 1024, "%s/%s", item->path, event->event->name);
@@ -153,7 +156,8 @@ void yem_fs_ev_new(int fd, struct yem_ht* ht, struct yem_fs_event* event,
     if (yem_fs_is_extension(path) == 0) {
         return;
     }
-    yem_ht_push_str(build, path, path);
+    printf("%s\n", event->event->name);
+    yem_ht_push_str(build, event->event->name, path);
 }
 
 void yem_fs_ev_mod(int fd, struct yem_ht* ht, struct yem_fs_event* event,
@@ -161,7 +165,8 @@ void yem_fs_ev_mod(int fd, struct yem_ht* ht, struct yem_fs_event* event,
     struct yem_ht_item* item = yem_ht_get(ht, event->event->wd);
     char* path = malloc(1024);
     snprintf(path, 1024, "%s/%s", item->path, event->event->name);
-    yem_ht_push_str(build, path, path);
+    printf("%s\n", event->event->name);
+    yem_ht_push_str(build, event->event->name, path);
 }
 
 void yem_fs_ev_del(int fd, struct yem_ht* ht, struct yem_fs_event* event,
@@ -175,5 +180,31 @@ void yem_fs_ev_del(int fd, struct yem_ht* ht, struct yem_fs_event* event,
     if (yem_fs_is_extension(path) == 0) {
         return;
     }
-    yem_ht_push_str(build, path, path);
+    printf("%s\n", event->event->name);
+    yem_ht_push_str(build, event->event->name, path);
+}
+
+int yem_fs_maybe_make_build_dir(char* path) {
+    struct stat st;
+    char* build_path = malloc(1024);
+    snprintf(build_path, 1024, "%s/%s", path, "build");
+    if (stat(build_path, &st) == -1) {
+        if (mkdir(build_path, 0700) != 0) {
+            perror("mkdir");
+            return 0;
+        }
+        return 1;
+    }
+    return 0;
+}
+
+int yem_fs_maybe_remove_file(char* path) {
+    if (access(path, F_OK) != -1) {
+        if (remove(path) == 0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
+    return 1;
 }
